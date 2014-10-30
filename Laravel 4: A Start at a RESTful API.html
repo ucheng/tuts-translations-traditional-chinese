@@ -1,7 +1,10 @@
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<body>
 <h1>Laravel 4: A Start at a RESTful API </h1>
 
 <p>RESTful API's are hard! There are a lot of aspects to designing and writing a successful one. For instance, some of the topics that you may find yourself handling include authentication, hypermedia/HATEOS, versioning, rate limits, and content negotiation. Rather than tackling all of these concepts, however, let's instead focus on the basics of REST. We'll make some JSON endpoints behind a basic authentication system, and learn a few Laravel 4 tricks in the process.</p>
-<p>RESTful API 不簡單！ 關於如何設計以及實作一個成功的RESTful API存在著相當多的觀點。例如，一些你發現的主題可能在討論認證, hypermedia/HATEOS, API版本, rate limits, 和content negotiation. 相對於處理所有這些議題，讓我們專注在REST的基礎上。在這邊文章我們將會實作一個擁有基本的認證系統的JSON存取端點, 在這過程中同時學習一些Laravel 4 的技巧。</p>
+<p>RESTful API 不簡單！ 關於如何設計以及實作一個成功的RESTful API存在著相當多的觀點。例如，一些你發現的主題可能在討論認證, hypermedia/HATEOS, API版本, 存取限制(rate limits), 和content negotiation. 相對於處理所有這些議題，讓我們專注在REST的基礎上。在這篇文章我們將會實作一個擁有基本的認證系統的JSON存取端點, 在這過程中同時學習一些Laravel 4 的祕技。</p>
 
 <h2>The App</h2>
 <h2>目標App</h2>
@@ -13,10 +16,10 @@
 <h3>安裝Laravel 4</h3>
 
 <p>Create a new <a href="http://four.laravel.com/#install-laravel" title="install laravel">install of Laravel 4</a>. If you're handy with CLI, try this <a href="http://fideloper.com/laravel-4-uber-quick-start-with-auth-guide?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="laravel quick start">quickstart guide</a>. Otherwise, we have a <a href="http://net.tutsplus.com/tutorials/php/how-to-setup-laravel-4/" title="install laravel video">video tutorial here on Nettuts+</a> that covers the process.</p>
-<p>建立一個新 <a href="http://four.laravel.com/#install-laravel" title="install laravel">安裝的 Laravel 4</a>. 如果你對CLI很熟, 可以試試 <a href="http://fideloper.com/laravel-4-uber-quick-start-with-auth-guide?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="laravel quick start">quickstart guide</a>. 除此之外，我們也錄製了 <a href="http://net.tutsplus.com/tutorials/php/how-to-setup-laravel-4/" title="install laravel video">教學影片 on Nettuts+</a> 來說明整個流程</p>
+<p>建立一個新 <a href="http://four.laravel.com/#install-laravel" title="install laravel">安裝的 Laravel 4</a>. 如果你對CLI很熟, 可以試試 <a href="http://fideloper.com/laravel-4-uber-quick-start-with-auth-guide?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="laravel quick start">quickstart guide</a>. 除此之外，你也可以 <a href="http://net.tutsplus.com/tutorials/php/how-to-setup-laravel-4/" title="install laravel video">在Nettuts+上觀看我們錄製的教學影片</a> 影片內容包含了完整的步驟</p>
 
 <p>We're going to first create an encryption key for secure password hashing. You can do this easily by running this command from your project root:</p>
-<p>一開始我們要先建立一個加密key來提供較安全的密碼hashing。你可以在你的專案目錄下執行這個指令來完成這個動作：</p>
+<p>一開始我們要先建立一個加密用的金鑰來提供較安全的密碼雜湊(Hashing)。你可以在你的專案目錄下執行這個指令來完成這個動作：</p>
 
 <pre class="brush: bash">$ php artisan key:generate</pre>
 
@@ -80,7 +83,7 @@
 $ php artisan migrate:make create_urls_table --table=urls --create</pre>
 
 <p>These commands set up the basic migration scripts that we'll be using to create the database tables. Our job now is to fill them with the correct table columns.</p>
-<p>這幾個指令會產生基本的migration檔案用來建立資料庫表格。現在我們的工作就是填入正確的表格欄位。</p>
+<p>這幾個指令會產生用來建立資料庫表格的基本migration檔案。現在我們要做的就是填入正確的表格欄位。</p>
 
 <p>Edit <code>app/database/migrations/SOME_DATE_create_users_table.php</code> and add to the <code>up()</code> method:</p>
 <p>編輯 <code>app/database/migrations/SOME_DATE_create_users_table.php</code> 並且把內容加到 <code>up()</code> 方法中:</p>
@@ -98,6 +101,9 @@ $ php artisan migrate:make create_urls_table --table=urls --create</pre>
 
 <p>Above, we're setting a username (which should be unique), a password, as well as the timestamps. Save that, and now edit <code>app/database/migrations/SOME_DATE_create_urls_table.php</code>, and add to the <code>up()</code> method:</p>
 
+<p>在上面, 我們設定了一個username欄位 (應該要唯一), 一個password欄位, 以及timestamps. 儲存後, 接著編輯 <code>app/database/migrations/SOME_DATE_create_urls_table.php</code>, 並加下列的程式加到 <code>up()</code> 方法中:</p>
+
+
 <pre class="brush: php">public function up()
 {
   Schema::create('urls', function(Blueprint $table)
@@ -111,12 +117,15 @@ $ php artisan migrate:make create_urls_table --table=urls --create</pre>
 }</pre>
 
 <p>The only important note in this snippet is that we're creating a link between the <code>url</code> and <code>users</code> table, via the <code>user_id</code> field.</p>
+<p>在這段程式碼中唯一重要的是, 我們透過 <code>user_id</code> 欄位, 在 <code>url</code> 和 <code>users</code> 資料表中建立了關聯</p>
 
 <h3>Add Sample Users</h3>
+<h3>新增隨機的使用者</h3>
 
-<p>We can use Laravel's <a href="http://four.laravel.com/docs/migrations#database-seeding" title="laravel seed database">seeds</a> to create a few sample users.</p>
+<p>我們可以使用 <a href="http://four.laravel.com/docs/migrations#database-seeding" title="laravel seed database">seeds</a> 來建議一些隨機的使用者</p>
 
 <p>Create a file within the <code>app/database/seeds</code> folder that has the same name as the table that it corresponds to; in our case, <code>UserTableSeeder.php</code>. Add:</p>
+<p>在 <code>app/database/seeds</code>資料夾中建立一個和資料表同名的檔案; 在我們的例子中, 取名為 <code>UserTableSeeder.php</code>. 同時新增下列程式碼:</p>
 
 <pre class="brush: php">&lt;?php
 
@@ -139,7 +148,7 @@ class UserTableSeeder extends Seeder {
 
 }</pre>
 
-<p>Next, make sure that seeder class gets run when the database is seeded. Edit <code>app/database/seeds/DatabaseSeeder.php</code>:</p>
+<p>接下來, 要確保 seeder class gets run when the database is seeded. 編輯 <code>app/database/seeds/DatabaseSeeder.php</code>:</p>
 
 <pre class="brush: php">public function run()
 {
@@ -150,22 +159,25 @@ class UserTableSeeder extends Seeder {
 }</pre>
 
 <h3>Run the Migrations</h3>
+<h3>執行 Migrations</h3>
 
 <p>Here's how to create those two tables, and insert our sample users.</p>
+<p>以下就是如何建立這兩個資料表, 並且新增隨機的使用者。</p>
 
-<pre class="brush: php">// Create the two tables
+<pre class="brush: php">// 建立兩個資料表
 $ php artisan migrate
 
-// Create the sample users
+// 建立隨機使用者
 $ php artisan db:seed</pre>
 
 <h2>Models</h2>
 
-<p>Laravel 4 continues to use the excellent Eloquent ORM. This will make the process of handling database calls a snap. We'll require one model per table.</p>
+<p>Laravel 4 繼續使用優秀的 Eloquent ORM This will make the process of handling database calls a snap. 每個資料表我們都會需要一個Model</p>
 
 <p>Luckily, Laravel comes with a User model setup, so let's create a model for our urls table.</p>
+<p>幸運地, Laravel內建一個 User model, 所以讓我們來建立urls的model</p>
 
-<p>Create and edit file <code>app/models/Url.php</code>.</p>
+<p>新增並編輯檔案 <code>app/models/Url.php</code>.</p>
 
 <pre class="brush: php">&lt;?php
 
@@ -176,10 +188,12 @@ class Url extends Eloquent {
 }</pre>
 
 <h2>Authentication</h2>
+<h2>認證(Authentication)</h2>
 
-<p>Laravel's <a href="http://four.laravel.com/docs/routing#route-filters" title="laravel filters">filters</a> can handle authentication for us. In particular, Laravel now comes with a Basic Authentication filter, which we can use as a quick authentication model to be used with our API requests.</p>
+<p>Laravel的 <a href="http://four.laravel.com/docs/routing#route-filters" title="laravel filters">filters</a> 可以協助我們處理認證. 通常 Laravel 內建一個 Basic Authentication filter, 我們可以用來當作一個 quick authentication model 在我們的API request中.</p>
 
 <p>If you open <code>app/filters.php</code>, you'll see what it looks like:</p>
+<p>如果你打開 <code>app/filters.php</code>, 你會看到如下的內容:</p>
 
 <pre class="brush: php">Route::filter('auth.basic', function()
 {
@@ -187,6 +201,7 @@ class Url extends Eloquent {
 });</pre>
 
 <p>We just need to make one adjustment. By default, this filter looks for an "email" field to identify the user. Since we're using usernames instead of emails, we just need to adjust that preference. Change the <code>Auth::basic()</code> call by giving it our username field as a parameter:</p>
+<p>我們只需要做一個調整。 預設, 這個 filter 會使用 "email" 欄位來辨識這個使用者. 因為我們是使用username而不是email, 我們只需要調整這個設定. 修改 <code>Auth::basic()</code>呼叫, 將我們的username當作一個參數:</p>
 
 <pre class="brush: php">Route::filter('auth.basic', function()
 {
@@ -195,9 +210,9 @@ class Url extends Eloquent {
 
 <h3>Routes</h3>
 
-<p>Let's test this out. Create a route, called <code>testauth</code>, and make sure that our <code>auth.basic</code> filter runs before it.</p>
+<p>讓我們來測試一下。 建立一個名為<code>testauth</code>的route, 並且確保我們的<code>auth.basic</code> filter在它前面執行。</p>
 
-<p>Edit <code>app/routes.php</code>:</p>
+<p>編輯 <code>app/routes.php</code>:</p>
 
 <pre class="brush: php">Route::get('/authtest', array('before' =&gt; 'auth.basic', function()
 {
@@ -205,6 +220,7 @@ class Url extends Eloquent {
 }));</pre>
 
 <p>We can test this with a curl request. From your terminal, try pointing to your build of Laravel. In mine, it looks like this (Your URL will likely be different!):</p>
+<p>我們可以透過curl來測試。 在你的命令列視窗中, 試著指向你的laravel專案. 在我的電腦中, 它看起來像是 (你的URL很可能長得不一樣!):</p>
 
 <pre class="brush: php">$ curl -i localhost/l4api/public/index.php/authtest
 HTTP/1.1 401 Unauthorized
@@ -216,6 +232,7 @@ Content-Type: text/html; charset=UTF-8
 Invalid credentials</pre>
 
 <p>As you can see, an unauthorized request is detected and a "Invalid Credentials" message is returned with a 401 status code. Next, try including basic authentication.</p>
+<p>如你所見, 被偵測到一個未經認證的請求，同時傳回一個 "Invalid Credentials" 的訊息並伴隨著 HTTP 401 狀態碼. 接下來, 試著加入 basic authentication.</p>
 
 <pre class="brush: php">$ curl --user firstuser:first_password localhost/l4api/public/index.php/authtest
 HTTP/1.1 200 OK
@@ -225,15 +242,15 @@ Content-Type: text/html; charset=UTF-8
 
 &lt;h1&gt;Hello World!&lt;/h1&gt;</pre>
 
-<p>It worked!</p>
+<p>成功了！</p>
 
-<p>At this point, the baseline work of our API is done. We have:</p>
+<p>在這個階段, 我們的API基礎已經完成了。 我們完成了:</p>
 
 <ul>
-<li>Installed Laravel 4</li>
-<li>Created our database</li>
-<li>Created our models</li>
-<li>Created an authentication model</li>
+<li>安裝 Laravel 4</li>
+<li>建立資料庫</li>
+<li>建立我們的 model</li>
+<li>建立一個認證模式</li>
 </ul>
 
 <h2>Creating Functional Requests</h2>
@@ -538,3 +555,5 @@ $ curl --user seconduser:second_password localhost/l4api/public/index.php/api/v1
 <li><a href="leanpub.com/laravel-testing-decoded">Unit test your code</a></li>
 <li>Check out <a href="http://apigee.com/about/api-best-practices">Apigee's great API resources</a></li>
 </ol>
+</body>
+</html>
