@@ -1,0 +1,540 @@
+<h1>Laravel 4: A Start at a RESTful API </h1>
+
+<p>RESTful API's are hard! There are a lot of aspects to designing and writing a successful one. For instance, some of the topics that you may find yourself handling include authentication, hypermedia/HATEOS, versioning, rate limits, and content negotiation. Rather than tackling all of these concepts, however, let's instead focus on the basics of REST. We'll make some JSON endpoints behind a basic authentication system, and learn a few Laravel 4 tricks in the process.</p>
+<p>RESTful API 不簡單！ 關於如何設計以及實作一個成功的RESTful API存在著相當多的觀點。例如，一些你發現的主題可能在討論認證, hypermedia/HATEOS, API版本, rate limits, 和content negotiation. 相對於處理所有這些議題，讓我們專注在REST的基礎上。在這邊文章我們將會實作一個擁有基本的認證系統的JSON存取端點, 在這過程中同時學習一些Laravel 4 的技巧。</p>
+
+<h2>The App</h2>
+<h2>目標App</h2>
+
+<p>Let's build an API for a simple Read-It-Later app. Users will be able to create, read, update and delete URLs that they wish to read later. Ready to dive in and get started?  </p>
+<p>讓我們來為一個簡單的稍後閱讀(Read-It-Later)APP建構一個API。使用者可以建立，閱讀，更新和刪除他們希望稍後閱讀的超連結。準備好開始了嗎？</p>
+
+<h3>Install Laravel 4</h3>
+<h3>安裝Laravel 4</h3>
+
+<p>Create a new <a href="http://four.laravel.com/#install-laravel" title="install laravel">install of Laravel 4</a>. If you're handy with CLI, try this <a href="http://fideloper.com/laravel-4-uber-quick-start-with-auth-guide?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="laravel quick start">quickstart guide</a>. Otherwise, we have a <a href="http://net.tutsplus.com/tutorials/php/how-to-setup-laravel-4/" title="install laravel video">video tutorial here on Nettuts+</a> that covers the process.</p>
+<p>建立一個新 <a href="http://four.laravel.com/#install-laravel" title="install laravel">安裝的 Laravel 4</a>. 如果你對CLI很熟, 可以試試 <a href="http://fideloper.com/laravel-4-uber-quick-start-with-auth-guide?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="laravel quick start">quickstart guide</a>. 除此之外，我們也錄製了 <a href="http://net.tutsplus.com/tutorials/php/how-to-setup-laravel-4/" title="install laravel video">教學影片 on Nettuts+</a> 來說明整個流程</p>
+
+<p>We're going to first create an encryption key for secure password hashing. You can do this easily by running this command from your project root:</p>
+<p>一開始我們要先建立一個加密key來提供較安全的密碼hashing。你可以在你的專案目錄下執行這個指令來完成這個動作：</p>
+
+<pre class="brush: bash">$ php artisan key:generate</pre>
+
+<p>Alternatively, you can simple edit your <code>app/config/app.php</code> encryption key:</p>
+<p>或者, 你可以直接編輯你的 <code>app/config/app.php</code> encryption key:</p>
+
+<pre class="brush: php">/*
+|--------------------------------------------------------------------------
+| Encryption Key
+|--------------------------------------------------------------------------
+|
+| This key is used by the Illuminate encrypter service and should be set
+| to a random, long string, otherwise these encrypted values will not
+| be safe. Make sure to change it before deploying any application!
+|
+*/
+
+'key' =&gt; md5('this is one way to get an encryption key set'),</pre>
+
+<h3>Database</h3>
+<h3>資料庫</h3>
+
+<p>Once you have a working install of Laravel 4, we can get started with the fun. We'll begin by creating the app's database.</p>
+<p>當你安裝好了Laravel 4, 我們就可以開始囉！一開始我們需要先建立資料庫。</p>
+
+<p>This will only require two database tables:</p>
+<p>在這個App中我們只需要兩個資料庫Table:</p>
+
+<ol>
+<li><strong>Users</strong>, 包含一個 username 和 password 欄位</li>
+<li><strong>URLs</strong>, 包含一個 url and description 欄位</li>
+</ol>
+
+<p>We'll use Laravel's <a href="http://four.laravel.com/docs/migrations" title="create Laravel migrations">migrations</a> to create and populate the database.</p>
+<p>我們會使用 Laravel 的 <a href="http://four.laravel.com/docs/migrations" title="create Laravel migrations">migrations 功能</a> 來建立資料庫</p>
+
+<h3>Configure Your Database</h3>
+<h3>設定你的資料庫</h3>
+
+<p>Edit <code>app/config/database.php</code> and fill it with your database settings. Note: this means creating a database for this application to use. This article assumes a MySQL database.</p>
+<p>編輯 <code>app/config/database.php</code> 並填入你的資料庫設定. 註: 這代表著要建立一個資料庫給這個應用程式使用. 在這邊我們假設使用MySQL資料庫。</p>
+
+<pre class="brush: php">'connections' =&gt; array(
+
+  'mysql' =&gt; array(
+      'driver'    =&gt; 'mysql',
+      'host'      =&gt; 'localhost',
+      'database'  =&gt; 'read_it_later',
+      'username'  =&gt; 'your_username',
+      'password'  =&gt; 'your_password',
+      'charset'   =&gt; 'utf8',
+      'collation' =&gt; 'utf8_unicode_ci',
+      'prefix'    =&gt; '',
+  ),
+),</pre>
+
+<h3>Create Migration Files</h3>
+<h3>建立Migration檔案</h3>
+
+<pre class="brush: bash">$ php artisan migrate:make create_users_table --table=users --create
+$ php artisan migrate:make create_urls_table --table=urls --create</pre>
+
+<p>These commands set up the basic migration scripts that we'll be using to create the database tables. Our job now is to fill them with the correct table columns.</p>
+<p>這幾個指令會產生基本的migration檔案用來建立資料庫表格。現在我們的工作就是填入正確的表格欄位。</p>
+
+<p>Edit <code>app/database/migrations/SOME_DATE_create_users_table.php</code> and add to the <code>up()</code> method:</p>
+<p>編輯 <code>app/database/migrations/SOME_DATE_create_users_table.php</code> 並且把內容加到 <code>up()</code> 方法中:</p>
+
+<pre class="brush: php">public function up()
+{
+  Schema::create('users', function(Blueprint $table)
+  {
+      $table-&gt;increments('id');
+      $table-&gt;string('username')-&gt;unique();
+      $table-&gt;string('password');
+      $table-&gt;timestamps();
+  });
+}</pre>
+
+<p>Above, we're setting a username (which should be unique), a password, as well as the timestamps. Save that, and now edit <code>app/database/migrations/SOME_DATE_create_urls_table.php</code>, and add to the <code>up()</code> method:</p>
+
+<pre class="brush: php">public function up()
+{
+  Schema::create('urls', function(Blueprint $table)
+  {
+      $table-&gt;increments('id');
+      $table-&gt;integer('user_id');
+      $table-&gt;string('url');
+      $table-&gt;string('description');
+      $table-&gt;timestamps();
+  });
+}</pre>
+
+<p>The only important note in this snippet is that we're creating a link between the <code>url</code> and <code>users</code> table, via the <code>user_id</code> field.</p>
+
+<h3>Add Sample Users</h3>
+
+<p>We can use Laravel's <a href="http://four.laravel.com/docs/migrations#database-seeding" title="laravel seed database">seeds</a> to create a few sample users.</p>
+
+<p>Create a file within the <code>app/database/seeds</code> folder that has the same name as the table that it corresponds to; in our case, <code>UserTableSeeder.php</code>. Add:</p>
+
+<pre class="brush: php">&lt;?php
+
+class UserTableSeeder extends Seeder {
+
+  public function run()
+  {
+      DB::table('users')-&gt;delete();
+
+      User::create(array(
+          'username' =&gt; 'firstuser',
+          'password' =&gt; Hash::make('first_password')
+      ));
+
+      User::create(array(
+          'username' =&gt; 'seconduser',
+          'password' =&gt; Hash::make('second_password')
+      ));
+  }
+
+}</pre>
+
+<p>Next, make sure that seeder class gets run when the database is seeded. Edit <code>app/database/seeds/DatabaseSeeder.php</code>:</p>
+
+<pre class="brush: php">public function run()
+{
+  Eloquent::unguard();
+
+  // Add or Uncomment this line
+  $this-&gt;call('UserTableSeeder');
+}</pre>
+
+<h3>Run the Migrations</h3>
+
+<p>Here's how to create those two tables, and insert our sample users.</p>
+
+<pre class="brush: php">// Create the two tables
+$ php artisan migrate
+
+// Create the sample users
+$ php artisan db:seed</pre>
+
+<h2>Models</h2>
+
+<p>Laravel 4 continues to use the excellent Eloquent ORM. This will make the process of handling database calls a snap. We'll require one model per table.</p>
+
+<p>Luckily, Laravel comes with a User model setup, so let's create a model for our urls table.</p>
+
+<p>Create and edit file <code>app/models/Url.php</code>.</p>
+
+<pre class="brush: php">&lt;?php
+
+class Url extends Eloquent {
+
+  protected $table = 'urls';
+
+}</pre>
+
+<h2>Authentication</h2>
+
+<p>Laravel's <a href="http://four.laravel.com/docs/routing#route-filters" title="laravel filters">filters</a> can handle authentication for us. In particular, Laravel now comes with a Basic Authentication filter, which we can use as a quick authentication model to be used with our API requests.</p>
+
+<p>If you open <code>app/filters.php</code>, you'll see what it looks like:</p>
+
+<pre class="brush: php">Route::filter('auth.basic', function()
+{
+  return Auth::basic();
+});</pre>
+
+<p>We just need to make one adjustment. By default, this filter looks for an "email" field to identify the user. Since we're using usernames instead of emails, we just need to adjust that preference. Change the <code>Auth::basic()</code> call by giving it our username field as a parameter:</p>
+
+<pre class="brush: php">Route::filter('auth.basic', function()
+{
+  return Auth::basic("username");
+});</pre>
+
+<h3>Routes</h3>
+
+<p>Let's test this out. Create a route, called <code>testauth</code>, and make sure that our <code>auth.basic</code> filter runs before it.</p>
+
+<p>Edit <code>app/routes.php</code>:</p>
+
+<pre class="brush: php">Route::get('/authtest', array('before' =&gt; 'auth.basic', function()
+{
+  return View::make('hello');
+}));</pre>
+
+<p>We can test this with a curl request. From your terminal, try pointing to your build of Laravel. In mine, it looks like this (Your URL will likely be different!):</p>
+
+<pre class="brush: php">$ curl -i localhost/l4api/public/index.php/authtest
+HTTP/1.1 401 Unauthorized
+Date: Tue, 21 May 2013 18:47:59 GMT
+WWW-Authenticate: Basic
+Vary: Accept-Encoding
+Content-Type: text/html; charset=UTF-8
+
+Invalid credentials</pre>
+
+<p>As you can see, an unauthorized request is detected and a "Invalid Credentials" message is returned with a 401 status code. Next, try including basic authentication.</p>
+
+<pre class="brush: php">$ curl --user firstuser:first_password localhost/l4api/public/index.php/authtest
+HTTP/1.1 200 OK
+Date: Tue, 21 May 2013 18:50:51 GMT
+Vary: Accept-Encoding
+Content-Type: text/html; charset=UTF-8
+
+&lt;h1&gt;Hello World!&lt;/h1&gt;</pre>
+
+<p>It worked!</p>
+
+<p>At this point, the baseline work of our API is done. We have:</p>
+
+<ul>
+<li>Installed Laravel 4</li>
+<li>Created our database</li>
+<li>Created our models</li>
+<li>Created an authentication model</li>
+</ul>
+
+<h2>Creating Functional Requests</h2>
+
+<p>You may be familiar with Laravel's <a href="http://four.laravel.com/docs/controllers#restful-controllers" title="laravel restful controller">RESTful controllers</a>. They still exist in Laravel 4; however, we can also use Laravel's <a href="http://four.laravel.com/docs/controllers#resource-controllers" title="laravel resourceful controller">Resourceful Controllers</a>, which set up some paradigms that we can use to make a consistent API interface. We'll be using a Resourceful controller.</p>
+<blockquote>
+<p><a href="http://four.laravel.com/docs/controllers#resource-controllers">Here's a breakdown</a> of what each method in the resourceful controller will handle. Please note that you can remove the /resource/create and /resource/{id}/edit routes, since we won't be needing to show 'create' or 'edit' forms in an API.</p>
+</blockquote>
+
+<h3>Create a Resourceful Controller</h3>
+
+<pre class="brush: bash">$ php artisan controller:make UrlController</pre>
+
+<p>Next, setup a route to use the controller, and require each route to be authenticated.</p>
+
+<p>Edit <code>app/routes.php</code> and add:</p>
+
+<pre class="brush: php">// Route group for API versioning
+Route::group(array('prefix' =&gt; 'api/v1', 'before' =&gt; 'auth.basic'), function()
+{
+  Route::resource('url', 'UrlController');
+});</pre>
+
+<p>A few things are happening there.</p>
+
+<ol>
+<li>This is going to respond to requests made to <code>http://example.com/api/v1/url</code>.</li>
+<li>This allows us to add extra routes, if we need to expand our API. For instance, if you add a user end-point, such as <code>/api/v1/user</code>.<br /></li>
+<li>There is also a naming mechanism in place for versioning our API. This gives us the opportunity to roll out new API versions without breaking older versions - We can simply create a <strong>v2</strong> route group, and point it to a new controller!</li>
+</ol>
+
+<p>Note: You may want to consider more advanced API versioning techniques, such as using an <code>Accept</code> header or subdomain which can help you point different API versions separate code bases.</p>
+
+<h3>Add the Functionality</h3>
+
+<p>Edit the new <code>app/controllers/UrlController.php</code> file:</p>
+
+<pre class="brush: php">// Edit this:
+public function index()
+{
+  return 'Hello, API';
+}</pre>
+
+<p>Let's test it:</p>
+
+<pre class="brush: php">$ curl -i localhost/l4api/public/index.php/api/v1/url
+HTTP/1.1 401 Unauthorized
+Date: Tue, 21 May 2013 19:02:59 GMT
+WWW-Authenticate: Basic
+Vary: Accept-Encoding
+Content-Type: text/html; charset=UTF-8
+
+Invalid credentials.
+
+$ curl --user firstuser:first_password localhost/l4api/public/index.php/api/v1/url
+HTTP/1.1 200 OK
+Date: Tue, 21 May 2013 19:04:19 GMT
+Vary: Accept-Encoding
+Content-Type: text/html; charset=UTF-8
+
+Hello, API</pre>
+
+<p>We now have a resourceful controller with authentication working, and are ready to add functionality.</p>
+
+<h3>Create a URL</h3>
+
+<p>Edit <code>app/controllers/UrlController.php</code>:</p>
+
+<pre class="brush: php">/**
+ * Store a newly created resource in storage.
+ *
+ * @return Response
+ */
+public function store()
+{
+  $url = new Url;
+  $url-&gt;url = Request::get('url');
+  $url-&gt;description = Request::get('description');
+  $url-&gt;user_id = Auth::user()-&gt;id;
+
+  // Validation and Filtering is sorely needed!!
+  // Seriously, I'm a bad person for leaving that out.
+
+  $url-&gt;save();
+
+  return Response::json(array(
+      'error' =&gt; false,
+      'urls' =&gt; $urls-&gt;toArray()),
+      200
+  );
+}</pre>
+
+<p>It's time to test this with another curl request. This one will send a POST request, which will correspond to the <code>store()</code> method created above.</p>
+
+<pre class="brush: bash">$ curl -i --user firstuser:first_password -d 'url=http://google.com&amp;description=A Search Engine' localhost/l4api/public/index.php/api/v1/url
+HTTP/1.1 201 Created
+Date: Tue, 21 May 2013 19:10:52 GMT
+Content-Type: application/json
+
+{"error":false,"message":"URL created"}</pre>
+
+<p>Cool! Let's create a few more, for both of our users.</p>
+
+<pre class="brush: bash">$ curl --user firstuser:first_password -d 'url=http://fideloper.com&amp;description=A Great Blog' localhost/l4api/public/index.php/api/v1/url
+
+$ curl --user seconduser:second_password -d 'url=http://digitalsurgeons.com&amp;description=A Marketing Agency' localhost/l4api/public/index.php/api/v1/url
+
+$ curl --user seconduser:second_password -d 'url=http://www.poppstrong.com/&amp;description=I feel for him' localhost/l4api/public/index.php/api/v1/url</pre>
+
+<p>Next, let's create methods for retrieving URLs.</p>
+
+<pre class="brush: php">/**
+ * Display a listing of the resource.
+ *
+ * @return Response
+ */
+public function index()
+{
+  //Formerly: return 'Hello, API';
+
+  $urls = Url::where('user_id', Auth::user()-&gt;id)-&gt;get();
+
+  return Response::json(array(
+      'error' =&gt; false,
+      'urls' =&gt; $urls-&gt;toArray()),
+      200
+  );
+}
+
+/**
+ * Display the specified resource.
+ *
+ * @param  int  $id
+ * @return Response
+ */
+public function show($id)
+{
+  // Make sure current user owns the requested resource
+  $url = Url::where('user_id', Auth::user()-&gt;id)
+          -&gt;where('id', $id)
+          -&gt;take(1)
+          -&gt;get();
+
+  return Response::json(array(
+      'error' =&gt; false,
+      'urls' =&gt; $url-&gt;toArray()),
+      200
+  );
+}</pre>
+
+<p>Let's test them out:</p>
+
+<pre class="brush: bash">$ curl --user firstuser:first_password localhost/l4api/public/index.php/api/v1/url
+{
+  "error": false,
+  "urls": [
+     {
+          "created_at": "2013-02-01 02:39:10",
+          "description": "A Search Engine",
+          "id": "2",
+          "updated_at": "2013-02-01 02:39:10",
+          "url": "http://google.com",
+          "user_id": "1"
+      },
+      {
+          "created_at": "2013-02-01 02:44:34",
+          "description": "A Great Blog",
+          "id": "3",
+          "updated_at": "2013-02-01 02:44:34",
+          "url": "http://fideloper.com",
+          "user_id": "1"
+      }
+  ]
+}
+
+$ curl --user firstuser:first_password localhost/l4api/public/index.php/api/v1/url/1
+{
+  "error": false,
+  "urls": [
+      {
+          "created_at": "2013-02-01 02:39:10",
+          "description": "A Search Engine",
+          "id": "2",
+          "updated_at": "2013-02-01 02:39:10",
+          "url": "http://google.com",
+          "user_id": "1"
+      }
+  ]
+}</pre>
+
+<p>Almost done. Let's now allow users to delete a url.</p>
+
+<pre class="brush: php">/**
+ * Remove the specified resource from storage.
+ *
+ * @param  int  $id
+ * @return Response
+ */
+public function destroy($id)
+{
+  $url = Url::where('user_id', Auth::user()-&gt;id)-&gt;find($id);
+
+  $url-&gt;delete();
+
+  return Response::json(array(
+      'error' =&gt; false,
+      'message' =&gt; 'url deleted'),
+      200
+      );
+}</pre>
+
+<p>Now, we can delete a URL by using a DELETE request:</p>
+
+<pre class="brush: bash">$ curl -i -X DELETE --user firstuser:first_password localhost/l4api/public/index.php/api/v1/url/1
+HTTP/1.1 200 OK
+Date: Tue, 21 May 2013 19:24:19 GMT
+Content-Type: application/json
+
+{"error":false,"message":"url deleted"}</pre>
+
+<p>Lastly, let's allow users to update a url.</p>
+
+<pre class="brush: php">/**
+ * Update the specified resource in storage.
+ *
+ * @param  int  $id
+ * @return Response
+ */
+public function update($id)
+{
+  $url = Url::where('user_id', Auth::user()-&gt;id)-&gt;find($id);
+
+  if ( Request::get('url') )
+  {
+      $url-&gt;url = Request::get('url');
+  }
+
+  if ( Request::get('description') )
+  {
+      $url-&gt;description = Request::get('description');
+  }
+
+  $url-&gt;save();
+
+  return Response::json(array(
+      'error' =&gt; false,
+      'message' =&gt; 'url updated'),
+      200
+  );
+}</pre>
+
+<p>To test URL updates, run:</p>
+
+<pre class="brush: bash">$ curl -i -X PUT --user seconduser:second_password -d 'url=http://yahoo.com' localhost/l4api/public/index.php/api/v1/url/4
+HTTP/1.1 200 OK
+Date: Tue, 21 May 2013 19:34:21 GMT
+Content-Type: application/json
+
+{"error":false,"message":"url updated"}
+
+// View our changes
+$ curl --user seconduser:second_password localhost/l4api/public/index.php/api/v1/url/4
+{
+  "error": false,
+  "urls": [
+      {
+          "created_at": "2013-02-01 02:44:34",
+          "description": "I feel for him",
+          "id": "3",
+          "updated_at": "2013-02-02 18:44:18",
+          "url": "http://yahoo.com",
+          "user_id": "1"
+      }
+  ]
+}</pre>
+
+<h2>And That's It</h2>
+
+<p>We now have the beginnings of a fully-functioning API. I hope that you've learned a lot about how to get an API underway with Laravel 4.</p>
+
+<p>To recap, we achieved the following in this lesson:</p>
+
+<ol>
+<li>Install Laravel</li>
+<li>Create the database, using migrations and seeding</li>
+<li>Use Eloquent ORM models</li>
+<li>Authenticate with Basic Auth</li>
+<li>Set up Routes, including versioning the API</li>
+<li>Create the API functionality using Resourceful Controllers</li>
+</ol>
+
+<h3>The Next Steps</h3>
+
+<p>If you'd like to push your API up a notch, you might consider any of the following as a next step.</p>
+
+<ol>
+<li>Validation (Hint: Laravel has a <a href="http://four.laravel.com/docs/validation">Validation library</a>).</li>
+<li>API-request error handling – It's still possible to receive HTML response on API requests (Hint: <a href="http://fideloper.com/laravel4-error-handling" title="laravel error handling">Laravel Error Handling</a>, plus Content Negotiation.)</li>
+<li>Content Negotiation - listening for the Accept header. (Hint: <a href="http://four.laravel.com/docs/requests#request-information" title="Laravel request class">Laravel's Request Class</a> will give you the request headers).</li>
+<li>Check out the <a href="http://groups.google.com/group/api-craft/">API Craft Google Group</a></li>
+<li>Learn about the <a href="http://fideloper.com/quick-caching-explanation?utm_source=nettuts&amp;utm_medium=article&amp;utm_content=api&amp;utm_campaign=guest_author" title="http cache">different types caching</a> and how Validation Caching can improve your API</li>
+<li><a href="leanpub.com/laravel-testing-decoded">Unit test your code</a></li>
+<li>Check out <a href="http://apigee.com/about/api-best-practices">Apigee's great API resources</a></li>
+</ol>
